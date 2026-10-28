@@ -1,0 +1,136 @@
+@use 'app/shared/styles/abstracts/colors' as color;
+
+.card {
+  background: color.$neutral-0;
+  border: 1px solid color.$neutral-200;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: color.$neutral-900;
+  margin: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.chip.submitted {
+  background: #e8f5e9;
+  color: color.$green-600;
+}
+
+.chip.pending {
+  background: color.$orange-100;
+  color: color.$orange-600;
+}
+
+.items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.initial {
+  background: color.$green-400;
+  color: color.$neutral-0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.name {
+  margin: 0;
+  color: color.$neutral-900;
+  font-size: 16px;
+}
+
+.qty {
+  margin: 0;
+  color: color.$neutral-600;
+  font-size: 14px;
+}
+
+.price {
+  margin: 0;
+  color: color.$neutral-900;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.empty {
+  color: color.$neutral-600;
+  margin: 0;
+}
+
+.subtotal {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid color.$neutral-200;
+  font-weight: 700;
+  font-size: 18px;
+  color: color.$neutral-900;
+  margin: 0;
+}
+
+@media (max-width: 375px) {
+  .card {
+    padding: 16px;
+  }
+
+  .item {
+    grid-template-columns: 40px 1fr;
+    grid-template-areas:
+      "avatar name"
+      "avatar qty"
+      "avatar price";
+  }
+
+  .avatar {
+    grid-area: avatar;
+  }
+
+  .name {
+    grid-area: name;
+  }
+
+  .qty {
+    grid-area: qty;
+  }
+
+  .price {
+    grid-area: price;
+    justify-self: end;
+  }
+}
