@@ -16,6 +16,15 @@
           <span class="status-badge collecting">Collecting pre-orders</span>
         }
       </div>
+      @if (lastUpdated()) {
+        <div class="sync-info">
+          <span>Updated at {{ lastUpdated() | date: 'HH:mm:ss' }}</span>
+          <button (click)="refreshNow()">Refresh</button>
+        </div>
+      }
+      @if (syncError()) {
+        <div class="sync-error">{{ syncError() }}</div>
+      }
       @if (invite()) {
         <div class="info">
           <div class="info-row">

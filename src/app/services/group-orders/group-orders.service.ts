@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { GroupSessionsResponse } from '@app/models/group-orders/group-sessions-response.model';
@@ -6,6 +6,7 @@ import { GroupStatusResponse } from '@app/models/group-orders/group-status.model
 import { GuestInvite } from '@app/models/reservations/guest-invite.model';
 import { SubmittedDish } from '@app/models/group-orders/submit-group-pre-order.model';
 import { API_BASE_URL } from '@app/shared/config/api-base-url.token';
+import { SKIP_ERROR_TOAST } from '@app/auth/skip-error-toast.context';
 
 @Injectable({
   providedIn: 'root',
@@ -43,20 +44,28 @@ export class GroupOrdersService {
     });
   }
 
-  getSessions(groupReservationId: string): Observable<GroupSessionsResponse> {
-    return this.http.get<GroupSessionsResponse>(this.url(`/guest/groups/${groupReservationId}/sessions`));
+  getSessions(groupReservationId: string, options?: { silent?: boolean }): Observable<GroupSessionsResponse> {
+    const context = new HttpContext();
+    if (options?.silent) {
+      context.set(SKIP_ERROR_TOAST, true);
+    }
+    return this.http.get<GroupSessionsResponse>(this.url(`/guest/groups/${groupReservationId}/sessions`), { context });
   }
 
-  getSessions$(groupReservationId: string): Observable<GroupSessionsResponse> {
-    return this.getSessions(groupReservationId);
+  getSessions$(groupReservationId: string, options?: { silent?: boolean }): Observable<GroupSessionsResponse> {
+    return this.getSessions(groupReservationId, options);
   }
 
-  getStatus(groupReservationId: string): Observable<GroupStatusResponse> {
-    return this.http.get<GroupStatusResponse>(this.url(`/guest/groups/${groupReservationId}/status`));
+  getStatus(groupReservationId: string, options?: { silent?: boolean }): Observable<GroupStatusResponse> {
+    const context = new HttpContext();
+    if (options?.silent) {
+      context.set(SKIP_ERROR_TOAST, true);
+    }
+    return this.http.get<GroupStatusResponse>(this.url(`/guest/groups/${groupReservationId}/status`), { context });
   }
 
-  getStatus$(groupReservationId: string): Observable<GroupStatusResponse> {
-    return this.getStatus(groupReservationId);
+  getStatus$(groupReservationId: string, options?: { silent?: boolean }): Observable<GroupStatusResponse> {
+    return this.getStatus(groupReservationId, options);
   }
 
   submit(groupReservationId: string, reservationId: string): Observable<SubmittedDish[]> {

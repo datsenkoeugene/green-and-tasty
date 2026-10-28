@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
+import { catchError, exhaustMap, finalize, forkJoin, interval, of, startWith, Subject, switchMap, takeUntil } from 'rxjs';
 import { ParticipantCardComponent } from '@app/components/group-orders/participant-card/participant-card.component';
 import { GroupOrdersService } from '@app/services/group-orders/group-orders.service';
 import { consolidatePreOrder } from '@app/shared/helpers/consolidate-pre-order';
@@ -15,10 +15,12 @@ import { ToastService } from '@app/services/toast/toast.service';
   styleUrl: './group-order-page.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
 })
-export class GroupOrderPageComponent {
+export class GroupOrderPageComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly groupOrdersService = inject(GroupOrdersService);
   private readonly toastService = inject(ToastService);
+  private readonly destroy$ = new Subject<void>();
+  private syncStarted = false;
 
   readonly reservationId = this.route.snapshot.paramMap.get('reservationId') ?? '';
 
@@ -34,6 +36,8 @@ export class GroupOrderPageComponent {
   readonly groupStatus = signal<'Open' | 'Submitted' | 'Closed'>('Open');
 
   readonly showConfirmModal = signal(false);
+  readonly lastUpdated = signal<Date | null>(null);
+  readonly syncError = signal<string | null>(null);
 
   readonly myParticipant = computed(() => {
     const id = this.guestSessionId();
@@ -78,6 +82,76 @@ export class GroupOrderPageComponent {
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private startSync(): void {
+    if (this.syncStarted) return;
+    if (this.isSubmitted() || this.groupStatus() === 'Submitted') return;
+    this.syncStarted = true;
+    interval(15000)
+      .pipe(
+        takeUntil(this.destroy$),
+        exhaustMap(() => {
+          const groupId = this.groupReservationId();
+          if (!groupId) return of(null);
+          if (this.isSubmitted() || this.groupStatus() === 'Submitted') {
+            this.destroy$.next();
+            return of(null);
+          }
+          return forkJoin({
+            sessions: this.groupOrdersService.getSessions$(groupId, { silent: true }),
+            status: this.groupOrdersService.getStatus$(groupId, { silent: true }),
+          }).pipe(
+            catchError(() => {
+              this.syncError.set("Couldn't refresh. Showing data from …");
+              return of(null);
+            })
+          );
+        })
+      )
+      .subscribe((result) => {
+        if (!result) return;
+        this.syncError.set(null);
+        this.participants.set(result.sessions.participants || []);
+        this.groupStatus.set(result.status.status);
+        if (result.status.status === 'Submitted') {
+          this.isSubmitted.set(true);
+          this.destroy$.next();
+        }
+        this.lastUpdated.set(new Date());
+      });
+  }
+
+  refreshNow(): void {
+    const groupId = this.groupReservationId();
+    if (!groupId) return;
+    if (this.isSubmitted() || this.groupStatus() === 'Submitted') return;
+    forkJoin({
+      sessions: this.groupOrdersService.getSessions$(groupId, { silent: true }),
+      status: this.groupOrdersService.getStatus$(groupId, { silent: true }),
+    })
+      .pipe(
+        catchError(() => {
+          this.syncError.set("Couldn't refresh. Showing data from …");
+          return of(null);
+        })
+      )
+      .subscribe((result) => {
+        if (!result) return;
+        this.syncError.set(null);
+        this.participants.set(result.sessions.participants || []);
+        this.groupStatus.set(result.status.status);
+        if (result.status.status === 'Submitted') {
+          this.isSubmitted.set(true);
+          this.destroy$.next();
+        }
+        this.lastUpdated.set(new Date());
+      });
+  }
+
   loadData(): void {
     this.isLoading.set(true);
     this.error.set(null);
@@ -113,7 +187,9 @@ export class GroupOrderPageComponent {
         if (result.status.status === 'Submitted') {
           this.isSubmitted.set(true);
         }
+        this.lastUpdated.set(new Date());
         this.isLoading.set(false);
+        this.startSync();
       });
   }
 
@@ -146,6 +222,7 @@ export class GroupOrderPageComponent {
           this.toastService.success('Pre-order sent to the restaurant');
           this.isSubmitted.set(true);
           this.groupStatus.set('Submitted');
+          this.destroy$.next();
         }
       });
   }
