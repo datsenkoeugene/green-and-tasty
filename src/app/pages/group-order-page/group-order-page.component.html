@@ -61,7 +61,13 @@
         <ul class="participants">
           @for (person of orderedParticipants(); track person.id) {
             <li>
-              <app-participant-card [participant]="person" [isMyPreOrder]="person.id === guestSessionId()" [readOnly]="isSubmitted() || groupStatus() === 'Submitted'" />
+              <app-participant-card
+                [participant]="person"
+                [isMyPreOrder]="person.id === guestSessionId()"
+                [readOnly]="isSubmitted() || groupStatus() === 'Submitted'"
+                [canRemove]="!isSubmitted() && groupStatus() === 'Open' && person.type === 'Guest'"
+                (removeClick)="openRemove($event)"
+              />
             </li>
           }
         </ul>

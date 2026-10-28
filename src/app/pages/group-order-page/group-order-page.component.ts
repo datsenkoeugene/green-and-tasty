@@ -38,6 +38,8 @@ export class GroupOrderPageComponent implements OnDestroy {
   readonly showConfirmModal = signal(false);
   readonly lastUpdated = signal<Date | null>(null);
   readonly syncError = signal<string | null>(null);
+  readonly showRemoveModal = signal(false);
+  readonly participantToRemove = signal<any>(null);
 
   readonly myParticipant = computed(() => {
     const id = this.guestSessionId();
@@ -224,6 +226,36 @@ export class GroupOrderPageComponent implements OnDestroy {
           this.groupStatus.set('Submitted');
           this.destroy$.next();
         }
+      });
+  }
+
+  openRemove(participant: any): void {
+    if (this.isSubmitted() || this.groupStatus() === 'Submitted') return;
+    if (participant?.type !== 'Guest') return;
+    this.participantToRemove.set(participant);
+    this.showRemoveModal.set(true);
+  }
+
+  cancelRemove(): void {
+    this.showRemoveModal.set(false);
+    this.participantToRemove.set(null);
+  }
+
+  confirmRemove(): void {
+    const participant = this.participantToRemove();
+    if (!participant) return;
+    const groupId = this.groupReservationId();
+    this.showRemoveModal.set(false);
+    this.groupOrdersService
+      .removeSession$(groupId, participant.id)
+      .pipe(
+        catchError(() => of(null))
+      )
+      .subscribe((res) => {
+        if (res) {
+          this.participants.set(res.participants || []);
+        }
+        this.participantToRemove.set(null);
       });
   }
 }

@@ -7,6 +7,10 @@
     <span class="chip pending">Still choosing</span>
   }
 
+  @if (canRemove() && participant().type === 'Guest') {
+    <button type="button" class="remove-btn" [attr.aria-label]="'Remove ' + participant().name" (click)="onRemove()">Remove Guest</button>
+  }
+
   @if (participant().items.length) {
     <ul class="items">
       @for (item of participant().items; track item.dish.id) {

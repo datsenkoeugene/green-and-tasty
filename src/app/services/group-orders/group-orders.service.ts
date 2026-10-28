@@ -83,4 +83,8 @@ export class GroupOrdersService {
       switchMap((tokenRes) => this.getInviteByToken(tokenRes.token))
     );
   }
+
+  removeSession$(groupReservationId: string, guestSessionId: string): Observable<GroupSessionsResponse> {
+    return this.http.delete<GroupSessionsResponse>(this.url(`/guest/groups/${groupReservationId}/sessions/${guestSessionId}`));
+  }
 }

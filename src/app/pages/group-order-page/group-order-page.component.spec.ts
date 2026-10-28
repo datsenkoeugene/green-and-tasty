@@ -52,12 +52,24 @@ describe('Рівень 2 · сторінка Owner Review', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj<GroupOrdersService>('GroupOrdersService', [
-      'getGroupInvite$', 'getSessions$', 'getOwnerSessionId$', 'getStatus$', 'submit$',
-    ]);
-    service.getGroupInvite$.and.returnValue(of(INVITE));
-    service.getSessions$.and.returnValue(of(structuredClone(SESSIONS)));
-    service.getOwnerSessionId$.and.returnValue(of('owner'));
-    service.getStatus$.and.returnValue(of({ currentParticipants: 3, maxCapacity: 5, status: 'Open' as const }));
+      'getGroupInvite$', 'getSessions$', 'getOwnerSessionId$', 'getStatus$', 'submit$', 'removeSession$',
+    ] as any);
+    (service as any).getGroupInvite$ = (service.getGroupInvite$ || jasmine.createSpy()).and?.returnValue(of(INVITE)) || jasmine.createSpy('getGroupInvite$').and.returnValue(of(INVITE));
+    (service as any).getGroupInvite$ = jasmine.createSpy('getGroupInvite$').and.returnValue(of(INVITE));
+    (service as any).getSessions$ = jasmine.createSpy('getSessions$').and.returnValue(of(structuredClone(SESSIONS)));
+    (service as any).getSessions = jasmine.createSpy('getSessions').and.returnValue(of(structuredClone(SESSIONS)));
+    (service as any).getOwnerSessionId$ = jasmine.createSpy('getOwnerSessionId$').and.returnValue(of('owner'));
+    (service as any).getStatus$ = jasmine.createSpy('getStatus$').and.returnValue(of({ currentParticipants: 3, maxCapacity: 5, status: 'Open' as const }));
+    (service as any).getStatus = jasmine.createSpy('getStatus').and.returnValue(of({ currentParticipants: 3, maxCapacity: 5, status: 'Open' as const }));
+    (service as any).submit$ = jasmine.createSpy('submit$');
+    (service as any).submit = jasmine.createSpy('submit');
+    (service as any).removeSession$ = jasmine.createSpy('removeSession$');
+    service.getGroupInvite$ = (service as any).getGroupInvite$;
+    service.getSessions$ = (service as any).getSessions$;
+    service.getOwnerSessionId$ = (service as any).getOwnerSessionId$;
+    service.getStatus$ = (service as any).getStatus$;
+    service.submit$ = (service as any).submit$;
+    service.removeSession$ = (service as any).removeSession$;
   });
 
   describe('дані', () => {
