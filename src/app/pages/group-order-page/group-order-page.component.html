@@ -1,37 +1,103 @@
 <main class="page">
-  <header class="header">
-    <h1 class="title">Group Pre-Order</h1>
-    <div class="info">
-      <div class="info-row">
-        <span class="label">Address:</span>
-        <span class="value">{{ invite().LocationAddress }}</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Date:</span>
-        <span class="value">{{ invite().StartTime | date: 'MMM dd, yyyy' }}</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Time:</span>
-        <span class="value">{{ invite().StartTime | date: 'HH:mm' }} - {{ invite().EndTime | date: 'HH:mm' }}</span>
-      </div>
-      <div class="info-row guests">
-        <span class="value">{{ guestsCount() }} of {{ maxGuests() }} guests</span>
-      </div>
+  @if (isLoading()) {
+    <p>Loading...</p>
+  } @else if (error()) {
+    <div class="error">
+      <p>Group reservation not found</p>
+      <button (click)="retry()">Try again</button>
     </div>
-  </header>
-
-  <section class="participants-section">
-    <ul class="participants">
-      @for (person of participants(); track person.id) {
-        <li><app-participant-card [participant]="person" /></li>
+  } @else {
+    <header class="header">
+      <div class="header-top">
+        <h1 class="title">Group Pre-Order</h1>
+        @if (isSubmitted() || groupStatus() === 'Submitted') {
+          <span class="status-badge submitted">Sent to Restaurant</span>
+        } @else {
+          <span class="status-badge collecting">Collecting pre-orders</span>
+        }
+      </div>
+      @if (invite()) {
+        <div class="info">
+          <div class="info-row">
+            <span class="label">Address:</span>
+            <span class="value">{{ invite().LocationAddress }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date:</span>
+            <span class="value">{{ invite().StartTime | date: 'MMM dd, yyyy' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Time:</span>
+            <span class="value">{{ invite().StartTime | date: 'HH:mm' }} - {{ invite().EndTime | date: 'HH:mm' }}</span>
+          </div>
+          <div class="info-row guests">
+            <span class="value">{{ participants().length }} of {{ invite().MaxGuestCount }} guests</span>
+          </div>
+        </div>
       }
-    </ul>
-  </section>
+    </header>
 
-  <section class="grand-total">
-    <div class="grand-total-content">
-      <span class="grand-total-label">Grand Total</span>
-      <span class="grand-total-value">${{ participants().length ? (GROUP_ORDER_PREVIEW.sessions.total || 0).toFixed(2) : '0.00' }}</span>
-    </div>
-  </section>
+    @if (hasUnsubmitted() && !isSubmitted()) {
+      <div class="warning">
+        {{ unsubmittedCount() }} participant{{ unsubmittedCount() === 1 ? '' : 's' }} haven't submitted their cart yet — their dishes won't be included in the order
+      </div>
+    }
+
+    <section class="participants-section">
+      @if (participants().length === 0) {
+        <p>Participants haven't added any dishes yet</p>
+      } @else if (participants().every((p) => !p.items || p.items.length === 0)) {
+        <p>Participants haven't added any dishes yet</p>
+      } @else {
+        <ul class="participants">
+          @for (person of orderedParticipants(); track person.id) {
+            <li>
+              <app-participant-card [participant]="person" [isMyPreOrder]="person.id === guestSessionId()" [readOnly]="isSubmitted() || groupStatus() === 'Submitted'" />
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="consolidated">
+      <h2>Consolidated pre-order</h2>
+      @if (consolidated().items.length === 0) {
+        <p>No consolidated items</p>
+      } @else {
+        <ul class="consolidated-items">
+          @for (item of consolidated().items; track item.dish.id) {
+            <li class="consolidated-item">
+              <span>{{ item.dish.name }} × {{ item.quantity }}</span>
+              <span>{{ item.dish.price * item.quantity | currency }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="grand-total">
+      <div class="grand-total-content">
+        <span class="grand-total-label">Grand Total</span>
+        <span class="grand-total-value">{{ grandTotal() | currency }}</span>
+      </div>
+    </section>
+
+    @if (!isSubmitted() && groupStatus() === 'Open') {
+      <section class="submit-section">
+        <button class="submit-btn" [disabled]="!canSubmit() || isSubmitting()" (click)="openConfirm()">Submit Pre-Order</button>
+      </section>
+    }
+  }
+
+  @if (showConfirmModal()) {
+    <app-modal title="Submit Pre-Order" (closed)="cancelConfirm()">
+      <div class="modal-content">
+        <p>Are you sure you want to submit the pre-order?</p>
+      </div>
+      <div modal-actions>
+        <button (click)="cancelConfirm()">Cancel</button>
+        <button (click)="confirmSubmit()">Submit</button>
+      </div>
+    </app-modal>
+  }
 </main>
